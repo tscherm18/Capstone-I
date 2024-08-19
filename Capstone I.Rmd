@@ -1,0 +1,182 @@
+---
+title: "Capstone I"
+author: "Tim Scherman"
+date: "2024-08-05"
+output: html_document
+---
+```{r}
+specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
+```
+
+
+```{r}
+Jordan <- read.csv('Michael Jordan Regular Season Stats.csv') %>% filter(Opp != "CHI")
+View(Jordan)
+```
+
+```{r}
+Jordan <- mutate(Jordan, PRASB = rowSums(select(Jordan, c(PTS, TRB, AST, BLK, STL)), na.rm = TRUE))
+
+View(Jordan)
+```
+
+
+```{r Custom Stats Table}
+Jordan_table <- Jordan %>%
+  group_by(Win) %>%
+    summarize( 
+    Total = n(),
+    AVG_PTS = specify_decimal(mean(PTS, na.rm = TRUE), 1),
+    AVG_REB = specify_decimal(mean(TRB, na.rm = TRUE), 1),
+    AVG_AST = specify_decimal(mean(AST, na.rm = TRUE), 1),
+    AVG_STL = specify_decimal(mean(STL, na.rm = TRUE), 1),
+    AVG_BLK = specify_decimal(mean(BLK, na.rm = TRUE), 1),
+    AVG_PRASB = specify_decimal(mean(PRASB, na.rm = TRUE), 1),
+    AVG_MP = specify_decimal(mean(MP, na.rm = TRUE), 1),
+    AVG_PTS_per_Min = specify_decimal(mean(PTS.Min, na.rm = TRUE), 2),
+    AVG_PRASB_per_Min = specify_decimal(mean(PRASB/MP, na.rm = TRUE), 2)
+  ) 
+
+Jordan_table <- Jordan_table[order(Jordan_table$Total, decreasing = TRUE),]
+
+View(Jordan_table)
+```
+
+```{r}
+PRASB_Plot <- ggplot(data = Jordan) +
+  geom_point(mapping = aes(x = Age, y = PRASB, color = Win)) +
+  geom_smooth(mapping = aes(x = Age, y = PRASB, linetype = Home))
+
+PRASB_Plot
+```
+```{r}
+MJ_plot <- ggplot(Jordan, aes(x = Diff, y = GmSc, color = Home)) +
+  geom_point() +
+  facet_wrap(~ Tm, nrow = 5) +
+  coord_cartesian(xlim = c(-60, 60), ylim = c(0, 50)) 
+
+MJ_plot
+```
+```{r}
+Shaq <- read.csv('Shaq Regular Season Stats.csv')
+
+Shaq <- mutate(Shaq, PRASB = rowSums(select(Shaq, c(PTS, TRB, AST, BLK, STL)), na.rm = TRUE))
+
+View(Shaq)
+```
+
+
+```{r}
+ONeal <- Shaq %>%
+  group_by(Win) %>%
+    summarize( 
+    Total = n(),
+    AVG_PTS = specify_decimal(mean(PTS, na.rm = TRUE), 1),
+    AVG_REB = specify_decimal(mean(TRB, na.rm = TRUE), 1),
+    AVG_AST = specify_decimal(mean(AST, na.rm = TRUE), 1),
+    AVG_STL = specify_decimal(mean(STL, na.rm = TRUE), 1),
+    AVG_BLK = specify_decimal(mean(BLK, na.rm = TRUE), 1),
+    AVG_PRASB = specify_decimal(mean(PRASB, na.rm = TRUE), 1),
+    AVG_MP = specify_decimal(mean(Minutes, na.rm = TRUE), 1),
+    AVG_PTS_per_Min = specify_decimal(mean(PTS.Mns, na.rm = TRUE), 2),
+    AVG_PRASB_per_Min = specify_decimal(mean(PRASB/Minutes, na.rm = TRUE), 2)
+  )
+
+ONeal <- ONeal[order(ONeal$Total, decreasing = TRUE),]
+
+View(ONeal)
+```
+
+```{r}
+Shaq_plot <- ggplot(data = Shaq) +
+  geom_point(mapping = aes(x = teamdiff, y = GmSc, color = Tm)) +
+  geom_smooth(mapping = aes(x = teamdiff, y = GmSc, linetype = Home)) +
+  facet_wrap(~ Tm, nrow = 3) +
+  labs(x = "Team Point Differential +/-", y = "Shaq Game Score", title = "Shaq Impact Over Career")
+
+Shaq_plot
+```
+```{r}
+Shaq_plot2 <- ggplot(Shaq, aes(x = teamdiff, y = GmSc, color = Home)) +
+  geom_point() +
+  facet_wrap(~ Tm, nrow = 5) +
+  coord_cartesian(xlim = c(-60, 60), ylim = c(0, 50)) 
+
+Shaq_plot2
+```
+```{r Shaq and MJ df adjusted to not include Opponents with minimal data}
+ShaqMJ <- read.csv('MJ+Shaq Combined Regular Season Stats.csv')
+
+ShaqMJ <- mutate(ShaqMJ, PRASB = rowSums(select(ShaqMJ, c(PTS, TRB, AST, BLK, STL)), na.rm = TRUE)) %>% filter(Opp != 'NOK', Opp != 'KCK', Opp != 'CHA', Opp != 'OKC')
+
+View(ShaqMJ)
+```
+
+```{r Career Comparison Table}
+ShaqMJ_table <- ShaqMJ %>%
+  group_by(Player, Win) %>%
+    summarize( 
+    Total_Games = n(),
+    Avg_MP = specify_decimal(mean(MP, na.rm = TRUE), 1),
+    AVG_PTS = specify_decimal(mean(PTS, na.rm = TRUE), 1),
+    AVG_REB = specify_decimal(mean(TRB, na.rm = TRUE), 1),
+    AVG_AST = specify_decimal(mean(AST, na.rm = TRUE), 1),
+    AVG_STL = specify_decimal(mean(STL, na.rm = TRUE), 1),
+    AVG_BLK = specify_decimal(mean(BLK, na.rm = TRUE), 1),
+    AVG_PRASB = specify_decimal(mean(PRASB, na.rm = TRUE), 1),
+    AVG_PRASB_Min = specify_decimal(mean(PRASB/MP, na.rm = TRUE), 1)
+  )
+
+ShaqMJ_table <- ShaqMJ_table[order(ShaqMJ_table$Total_Games, decreasing = TRUE),]
+
+View(ShaqMJ_table)
+```
+
+```{r Comparing the two players Points+Rebounds+Assists+Steals+Blocks per game over their careers and highligthing the years they won a title}
+ShaqMJ_plot <- ggplot(ShaqMJ) +
+  geom_point(aes(x = Age, y = PRASB, color = Championship)) +
+  geom_smooth(aes(x = Age, y = PRASB, linetype = Win)) +
+  stat_cor(aes(x = Age, y = PRASB, label = paste(..rr.label.., sep = "~`,`~")), label.x = 33) +
+  facet_wrap(~ Player, nrow = 5) 
+
+ShaqMJ_plot
+```
+
+```{r Similar plot to above but instead using a regression line of best fit and splitting R squared coefficient into two groups for games MJ and Shaq won or lost}
+ShaqMJ_plot5 <- ggscatter(ShaqMJ, x = "Age", y = "PRASB",
+   color = "Win", palette = "jco",
+   add = "reg.line", conf.int = TRUE) +
+  stat_cor(aes(color = Win, label = paste(..rr.label.., sep = "~`,`~")), label.x = 36) + 
+  facet_wrap(~ Player, nrow = 5)
+
+ShaqMJ_plot5
+```
+
+```{r Comparing the game scores of the two players against other teams throughout their careers}
+ShaqMJ_plot2 <- ggplot(data = ShaqMJ, aes(x = Opp, y = GmSc)) + 
+  geom_boxplot() +
+  facet_wrap(~ Player, nrow = 3) +
+  coord_cartesian(ylim = c(0, 55)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ShaqMJ_plot2
+```
+```{r Comparing the two players Points+Rebounds+Assists+Steals+Blocks averages against each opponent throughout their careers}
+ShaqMJ_plot3 <- ggplot(data = ShaqMJ, mapping = aes(x = Opp, y = PRASB)) + 
+  geom_boxplot() +
+  facet_wrap(~ Player, nrow = 3) +
+  coord_cartesian(ylim = c(0, 80)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ShaqMJ_plot3
+```
+
+```{r}
+ShaqMJ_plot4 <- ggplot(ShaqMJ, aes(x = Diff, y = PRASB, color = Home)) +
+  geom_point() +
+  facet_wrap(~ Player, nrow = 5) +
+  coord_cartesian(xlim = c(-60, 60), ylim = c(0, 80)) 
+
+ShaqMJ_plot4
+```
+
